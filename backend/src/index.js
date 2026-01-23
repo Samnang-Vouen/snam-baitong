@@ -9,6 +9,10 @@ try {
   process.exit(1);
 }
 
+// Initialize MQTT connection (non-fatal if broker is unreachable; it will reconnect)
+const mqttService = require('./services/mqtt.service');
+mqttService.init();
+
 const app = createApp();
 const PORT = process.env.PORT || 3000;
 
@@ -23,6 +27,7 @@ const server = app.listen(PORT, () => {
   console.log(`   POST /api/plants - Create plant metadata`);
   console.log(`   POST /api/qr/generate - Generate QR for plant`);
   console.log(`   GET  /api/qr/scan/:token - Public aggregated view`);
+  console.log(`\nMQTT: ${mqttService.status().connected ? 'connected' : 'connecting...'} | Pump topic: ${mqttService.status().pumpTopic}`);
 });
 
 function shutdown(signal) {
@@ -30,6 +35,9 @@ function shutdown(signal) {
   try {
     if (sqlService && typeof sqlService.close === 'function') {
       sqlService.close();
+    }
+    if (mqttService && typeof mqttService.close === 'function') {
+      mqttService.close();
     }
   } catch (e) {
     console.error('Error during service shutdown:', e);

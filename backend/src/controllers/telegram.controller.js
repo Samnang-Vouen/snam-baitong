@@ -1,4 +1,5 @@
 const telegram = require('../services/telegram.service');
+const mqttService = require('../services/mqtt.service');
 const sqlService = require('../services/sql');
 const { formatTimestampLocal } = require('../utils/format');
 
@@ -105,11 +106,29 @@ async function webhook(req, res) {
     if (!chatId) {
       return res.json({ ok: true });
     }
-    if (text.startsWith('/update')) {
+    const cmdToken = text.split(/\s+/)[0];
+    const baseCmd = (cmdToken || '').toLowerCase().split('@')[0];
+    if (baseCmd === '/update') {
       const latest = await fetchLatestRow();
       const msg = formatLatestMessage(latest);
       // Plain text to avoid Markdown parse issues
       await telegram.sendMessage({ chatId, text: msg });
+    } else if (baseCmd === '/irrigate') {
+      // Turn pump ON via MQTT
+      try {
+        await mqttService.publishPump(true);
+        await telegram.sendMessage({ chatId, text: '✅ Pump turned ON' });
+      } catch (e) {
+        await telegram.sendMessage({ chatId, text: `❌ Failed to turn ON pump: ${e.message}` });
+      }
+    } else if (baseCmd === '/stop') {
+      // Turn pump OFF via MQTT
+      try {
+        await mqttService.publishPump(false);
+        await telegram.sendMessage({ chatId, text: '🛑 Pump turned OFF' });
+      } catch (e) {
+        await telegram.sendMessage({ chatId, text: `❌ Failed to turn OFF pump: ${e.message}` });
+      }
     }
     res.json({ ok: true });
   } catch (error) {
