@@ -16,6 +16,22 @@ mqttService.init();
 const app = createApp();
 const PORT = process.env.PORT || 3000;
 
+// Initialize MySQL auth-related schema and seed from env
+const { initSchema, ensureInitialAdminFromEnv } = require('./services/user.service');
+const { initCommentsSchema } = require('./controllers/comments.controller');
+(async () => {
+  try {
+    await initSchema();
+    await initCommentsSchema();
+    const seeded = await ensureInitialAdminFromEnv();
+    if (seeded) {
+      console.log('Initial admin created from environment variables');
+    }
+  } catch (e) {
+    console.error('Failed to initialize auth schema/seed:', e.message);
+  }
+})();
+
 const server = app.listen(PORT, () => {
   console.log(`Server is running on port ${PORT}`);
   console.log(`InfluxDB URL: ${process.env.INFLUXDB_URL}`);
@@ -24,9 +40,15 @@ const server = app.listen(PORT, () => {
   console.log(`   GET  /health - Health check`);
   console.log(`   GET  /api/sensors/latest - Latest readings`);
   console.log(`   GET  /api/dashboard - Dashboard data`);
-  console.log(`   POST /api/plants - Create plant metadata`);
+  console.log(`   POST /api/plants - Create plant metadata (admin)`);
   console.log(`   POST /api/qr/generate - Generate QR for plant`);
   console.log(`   GET  /api/qr/scan/:token - Public aggregated view`);
+  console.log(`   POST /api/auth/login - Login with email/password`);
+  console.log(`   POST /api/auth/logout - Logout (revoke token)`);
+  console.log(`   GET  /api/users - List users (admin)`);
+  console.log(`   POST /api/users - Create user (admin)`);
+  console.log(`   GET  /api/comments - List comments`);
+  console.log(`   POST /api/comments - Add comment`);
   console.log(`\nMQTT: ${mqttService.status().connected ? 'connected' : 'connecting...'} | Pump topic: ${mqttService.status().pumpTopic}`);
 });
 

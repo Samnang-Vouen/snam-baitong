@@ -7,6 +7,9 @@ const dashboardRoutes = require('./routes/dashboard.routes');
 const telegramRoutes = require('./routes/telegram.routes');
 const plantsRoutes = require('./routes/plants.routes');
 const qrRoutes = require('./routes/qr.routes');
+const authRoutes = require('./routes/auth.routes');
+const usersRoutes = require('./routes/users.routes');
+const commentsRoutes = require('./routes/comments.routes');
 const errorHandler = require('./middlewares/errorHandler');
 
 function createApp() {
@@ -23,6 +26,9 @@ function createApp() {
   app.use('/api/telegram', telegramRoutes);
   app.use('/api/plants', plantsRoutes);
   app.use('/api/qr', qrRoutes);
+  app.use('/api/auth', authRoutes);
+  app.use('/api/users', usersRoutes);
+  app.use('/api/comments', commentsRoutes);
 
   // 404 handler
   app.use((req, res) => {

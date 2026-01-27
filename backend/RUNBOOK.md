@@ -9,6 +9,8 @@ This guide walks you through:
 - Node.js 18+ installed on the backend machine
 - ngrok installed (`https://ngrok.com/download`) and authed (`ngrok config add-authtoken <token>`)
 - Backend .env configured with Telegram token and chat ID
+ - MySQL reachable per `.env` (see below)
+ - JWT secret configured in `.env`
 
 ## 1) Install and start the backend
 ```bash
@@ -17,6 +19,39 @@ npm install
 npm run dev
 ```
 Backend runs on `http://localhost:3000`. Webhook endpoint: `/api/telegram/webhook`.
+
+### Auth configuration
+Add these to `backend/.env`:
+```
+MYSQL_HOST=localhost
+MYSQL_PORT=3306
+MYSQL_USER=root
+MYSQL_PASSWORD=yourpassword
+MYSQL_DATABASE=snam_baitong
+
+JWT_SECRET=change_this_to_a_long_random_secret
+# optional, default 1h
+# JWT_EXPIRES_IN=1h
+
+# Optional: seed initial admin at startup
+# ADMIN_EMAIL=admin@example.com
+# ADMIN_PASSWORD=StrongSecret123!
+```
+
+Initial admin creation:
+On first start, if `ADMIN_EMAIL` and `ADMIN_PASSWORD` are set in `.env`, the backend creates the admin automatically. After the first boot, you may remove `ADMIN_PASSWORD` from `.env`.
+
+Auth endpoints:
+- `POST /api/auth/login` → `{ email, password }` → `{ token, user }`
+- `POST /api/auth/logout` (Bearer token required) → revokes the token
+
+Role-protected data endpoints:
+- `GET /api/sensors/latest` (admin|ministry)
+- `GET /api/dashboard` (admin|ministry)
+- `GET /api/plants/:id` (admin|ministry)
+- `POST /api/plants` (admin)
+- `GET /api/comments?entity_type=...&entity_id=...` (admin|ministry)
+- `POST /api/comments` (admin|ministry)
 
 ## 2) Expose backend to Telegram via ngrok (HTTPS)
 In a new terminal:
