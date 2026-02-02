@@ -1,5 +1,7 @@
 const bcrypt = require('bcryptjs');
 const { query, getConnection } = require('./mysql');
+const { User } = require('../models/User');
+const { generateTemporaryPassword } = require('../utils/password');
 
 const ROLES = {
   ADMIN: 'admin',
@@ -17,6 +19,7 @@ async function initSchema() {
         password_hash VARCHAR(255) NOT NULL,
         role ENUM('admin','ministry') NOT NULL,
         is_active TINYINT(1) NOT NULL DEFAULT 1,
+        must_change_password TINYINT(1) NOT NULL DEFAULT 0,
         created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
         updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
       ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
@@ -52,32 +55,90 @@ async function getById(id) {
 }
 
 async function listUsers() {
-  return query('SELECT id, email, role, is_active, created_at, updated_at FROM users ORDER BY id DESC');
+  return query('SELECT id, email, role, is_active, must_change_password, created_at, updated_at FROM users ORDER BY id DESC');
 }
 
 async function createUser({ email, password, role }) {
-  if (!email || !password || !role) {
-    const err = new Error('Missing required fields');
+  // Validate required fields
+  if (!email || !role) {
+    const err = new Error('Missing required fields: email and role are required');
     err.code = 'VALIDATION_ERROR';
     throw err;
   }
+  
+  // Validate email format
+  const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+  if (!emailRegex.test(email)) {
+    const err = new Error('Invalid email format');
+    err.code = 'VALIDATION_ERROR';
+    throw err;
+  }
+  
+  // Validate role
   if (![ROLES.ADMIN, ROLES.MINISTRY].includes(role)) {
-    const err = new Error('Invalid role');
+    const err = new Error('Invalid role. Must be either "admin" or "ministry"');
     err.code = 'VALIDATION_ERROR';
     throw err;
   }
+  
+  // Check for duplicate email
   const existing = await getByEmail(email);
   if (existing) {
     const err = new Error('Email already in use');
     err.code = 'CONFLICT';
     throw err;
   }
-  const password_hash = await bcrypt.hash(password, 10);
+  
+  // Generate temporary password if not provided
+  const temporaryPassword = password || generateTemporaryPassword();
+  const password_hash = await bcrypt.hash(temporaryPassword, 10);
+  
+  // Insert user with must_change_password flag set to true
   const result = await query(
-    'INSERT INTO users (email, password_hash, role) VALUES (?,?,?)',
-    [email, password_hash, role]
+    'INSERT INTO users (email, password_hash, role, must_change_password) VALUES (?,?,?,?)',
+    [email, password_hash, role, 1]
   );
-  return { id: result.insertId, email, role };
+  
+  // Return user data including temporary password (only in response)
+  return { 
+    id: result.insertId, 
+    email, 
+    role,
+    temporaryPassword,
+    must_change_password: true
+  };
+}
+
+async function updateUser(id, updates) {
+  const allowed = ['email', 'password', 'role', 'is_active', 'must_change_password'];
+  const fields = [];
+  const values = [];
+  
+  for (const key of allowed) {
+    if (updates[key] !== undefined) {
+      if (key === 'password') {
+        fields.push('password_hash = ?');
+        values.push(await bcrypt.hash(updates[key], 10));
+      } else {
+        fields.push(`${key} = ?`);
+        values.push(updates[key]);
+      }
+    }
+  }
+  
+  if (fields.length === 0) {
+    const err = new Error('No valid fields to update');
+    err.code = 'VALIDATION_ERROR';
+    throw err;
+  }
+  
+  values.push(id);
+  await query(`UPDATE users SET ${fields.join(', ')} WHERE id = ?`, values);
+  return getById(id);
+}
+
+async function deleteUser(id) {
+  await query('DELETE FROM users WHERE id = ?', [id]);
 }
 
 async function ensureInitialAdminFromEnv() {
@@ -90,6 +151,34 @@ async function ensureInitialAdminFromEnv() {
   return true;
 }
 
+/**
+ * Find user using Sequelize (alternative method)
+ */
+async function findUserByEmail(email) {
+  try {
+    const user = await User.findOne({ where: { email: email.toLowerCase() } });
+    return user;
+  } catch (error) {
+    console.error('Error finding user:', error);
+    return null;
+  }
+}
+
+/**
+ * Verify credentials using Sequelize model
+ */
+async function verifyCredentials(email, password) {
+  try {
+    const user = await findUserByEmail(email);
+    if (!user) return null;
+    const isValid = await user.verifyPassword(password);
+    return isValid ? user : null;
+  } catch (error) {
+    console.error('Error verifying credentials:', error);
+    return null;
+  }
+}
+
 module.exports = {
   ROLES,
   initSchema,
@@ -97,5 +186,9 @@ module.exports = {
   getById,
   listUsers,
   createUser,
+  updateUser,
+  deleteUser,
   ensureInitialAdminFromEnv,
+  findUserByEmail,
+  verifyCredentials,
 };

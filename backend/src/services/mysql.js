@@ -40,3 +40,4 @@ async function getConnection() {
 }
 
 module.exports = { pool: undefined, query, getConnection, ensureDatabaseExists };
+
