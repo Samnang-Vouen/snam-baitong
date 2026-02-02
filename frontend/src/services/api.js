@@ -9,6 +9,22 @@ const client = axios.create({
   baseURL: API_BASE,
   withCredentials: true // Enable cookies
 });
+
+// Add request interceptor to include auth token from localStorage
+client.interceptors.request.use(
+  (config) => {
+    // Get token from localStorage (backup for cookie-based auth)
+    const token = localStorage.getItem('authToken');
+    if (token) {
+      config.headers.Authorization = `Bearer ${token}`;
+    }
+    return config;
+  },
+  (error) => {
+    return Promise.reject(error);
+  }
+);
+
 export const httpClient = client;
 
 export const login = async (email, password) => {

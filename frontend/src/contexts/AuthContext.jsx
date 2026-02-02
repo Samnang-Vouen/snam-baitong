@@ -53,6 +53,8 @@ export const AuthProvider = ({ children }) => {
     } catch (error) {
       // Continue with client-side logout even if API call fails
     }
+    // Clear localStorage token
+    localStorage.removeItem('authToken');
     setUser(null);
     setRole(null);
     setMustChangePassword(false);
