@@ -26,12 +26,7 @@ function createApp() {
 
   // Middleware
   app.use(cors({
-    origin: process.env.FRONTEND_URL || [
-      'http://localhost:5173', 
-      'https://yuk-nonpedagogic-pridelessly.ngrok-free.dev',
-      /\.ngrok-free\.dev$/,  // Allow any ngrok-free.dev subdomain
-      /\.ngrok\.io$/          // Allow any ngrok.io subdomain
-    ],
+    origin: process.env.FRONTEND_URL,
     credentials: true
   }));
   app.use(cookieParser());
