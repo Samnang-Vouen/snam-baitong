@@ -19,7 +19,8 @@ async function postLogin(req, res, next) {
       maxAge: 24 * 60 * 60 * 1000 // 24 hours
     });
     
-    return res.json({ success: true, user: result.user });
+    // Also return token in response body for localStorage backup
+    return res.json({ success: true, user: result.user, token: result.token });
   } catch (e) {
     if (e.code === 'AUTH_FAILED') {
       return res.status(401).json({ success: false, error: 'Invalid credentials' });

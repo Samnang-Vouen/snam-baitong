@@ -34,6 +34,11 @@ export const authenticateUser = async (usernameOrEmail, password, rememberMe = f
     // When backend is ready, uncomment this:
     const response = await loginApi(usernameOrEmail, password);
     
+    // Store token in localStorage as backup for cookie-based auth
+    if (response.token) {
+      localStorage.setItem('authToken', response.token);
+    }
+    
     // Handle remember me preference
     if (rememberMe) {
       localStorage.setItem('rememberMe', 'true');
@@ -75,4 +80,5 @@ export const getSavedCredentials = () => {
 export const clearSavedCredentials = () => {
   localStorage.removeItem('rememberMe');
   localStorage.removeItem('savedUsername');
+  localStorage.removeItem('authToken');
 };
