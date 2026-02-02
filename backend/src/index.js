@@ -11,8 +11,8 @@ try {
 }
 
 // Initialize MQTT connection (non-fatal if broker is unreachable; it will reconnect)
-//const mqttService = require('./services/mqtt.service');
-//mqttService.init();
+const mqttService = require('./services/mqtt.service');
+mqttService.init();
 
 const app = createApp();
 const PORT = process.env.PORT || 3000;
@@ -49,7 +49,7 @@ const server = app.listen(PORT, () => {
   console.log(`   POST /api/users - Create user (admin)`);
   console.log(`   GET  /api/comments - List comments`);
   console.log(`   POST /api/comments - Add comment`);
-  //console.log(`\nMQTT: ${mqttService.status().connected ? 'connected' : 'connecting...'} | Pump topic: ${mqttService.status().pumpTopic}`);
+  console.log(`\nMQTT: ${mqttService.status().connected ? 'connected' : 'connecting...'} | Pump topic: ${mqttService.status().pumpTopic}`);
 });
 
 function shutdown(signal) {

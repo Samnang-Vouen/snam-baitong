@@ -17,12 +17,12 @@ const { User, ROLES } = require('../models/User');
 const PREDEFINED_ADMINS = [
   {
     email: 'admin1@gmail.com',
-    password: 'admin1123',
+    password: 'snambaitongadmin1',
     role: ROLES.ADMIN,
   },
   {
     email: 'admin2@gmail.com',
-    password: 'admin2123',
+    password: 'snambaitongadmin2',
     role: ROLES.ADMIN,
   },
 ];
