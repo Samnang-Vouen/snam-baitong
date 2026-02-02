@@ -38,7 +38,12 @@ async function login(email, password) {
   );
   return {
     token,
-    user: { id: user.id, email: user.email, role: user.role },
+    user: { 
+      id: user.id, 
+      email: user.email, 
+      role: user.role,
+      mustChangePassword: user.must_change_password || false
+    },
   };
 }
 

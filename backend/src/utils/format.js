@@ -86,7 +86,7 @@ function formatTimestampLocal(ts, opts = {}) {
     second: '2-digit',
     hour12: false,
     timeZone: tz,
-    timeZoneName: includeTZName ? 'short' : undefined,
+    timeZoneName: includeTZName ? 'shortOffset' : undefined,
   });
   return fmt.format(d);
 }

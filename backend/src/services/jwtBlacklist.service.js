@@ -12,4 +12,8 @@ async function isBlacklisted(jti) {
   return rows.length > 0;
 }
 
-module.exports = { blacklistToken, isBlacklisted };
+async function isTokenBlacklisted(jti) {
+  return isBlacklisted(jti);
+}
+
+module.exports = { blacklistToken, isBlacklisted, isTokenBlacklisted };
