@@ -2,7 +2,7 @@ const jwt = require("jsonwebtoken");
 const { isTokenBlacklisted } = require('../services/jwtBlacklist.service');
 const { getJwtConfig } = require('../services/auth.service');
 
-function authenticate(req, res, next) {
+async function authenticate(req, res, next) {
   // Try to get token from cookie first, then fall back to Authorization header
   let token = req.cookies.token;
   
@@ -25,11 +25,10 @@ function authenticate(req, res, next) {
     
     // Check if token is blacklisted
     if (payload.jti) {
-      isTokenBlacklisted(payload.jti).then(blacklisted => {
-        if (blacklisted) {
-          return res.status(401).json({ success: false, error: "Token has been revoked" });
-        }
-      });
+      const blacklisted = await isTokenBlacklisted(payload.jti);
+      if (blacklisted) {
+        return res.status(401).json({ success: false, error: "Token has been revoked" });
+      }
     }
     
     req.user = {
